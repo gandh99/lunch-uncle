@@ -4,7 +4,17 @@ import {
   formatForecast,
   formatBusArrivals,
   haversineMetres,
+  toolError,
 } from "../src/tools.js";
+
+test("toolError names the tool and keeps the reason", () => {
+  assert.deepEqual(toolError("get_rain_forecast", new TypeError("fetch failed")), {
+    error: "get_rain_forecast failed: fetch failed",
+  });
+  assert.deepEqual(toolError("get_bus_arrivals", "boom"), {
+    error: "get_bus_arrivals failed: boom",
+  });
+});
 
 test("formatForecast picks the requested area", () => {
   const payload = {

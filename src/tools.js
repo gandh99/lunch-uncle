@@ -81,18 +81,39 @@ export const toolDefinitions = [
 
 /**
  * Run one tool call requested by the model and return the result as a string.
+ *
+ * Never throws: a failing tool (network error, bad JSON, unexpected payload)
+ * comes back as {error} so the model can tell the user or try something else,
+ * instead of the whole chat turn failing.
  */
 export async function executeTool(name, args, env) {
+  try {
+    return JSON.stringify(await runTool(name, args, env));
+  } catch (err) {
+    console.error(`tool ${name} failed:`, err);
+    return JSON.stringify(toolError(name, err));
+  }
+}
+
+async function runTool(name, args, env) {
   switch (name) {
     case "find_lunch_places":
-      return JSON.stringify(await findLunchPlaces(args, env));
+      return findLunchPlaces(args, env);
     case "get_rain_forecast":
-      return JSON.stringify(await getRainForecast());
+      return getRainForecast();
     case "get_bus_arrivals":
-      return JSON.stringify(await getBusArrivals(args));
+      return getBusArrivals(args);
     default:
-      return JSON.stringify({ error: `Unknown tool: ${name}` });
+      return { error: `Unknown tool: ${name}` };
   }
+}
+
+/**
+ * Shape an exception from a tool into the error object the model sees.
+ */
+export function toolError(name, err) {
+  const reason = err instanceof Error ? err.message : String(err);
+  return { error: `${name} failed: ${reason}` };
 }
 
 // ---------------------------------------------------------------------------
